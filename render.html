@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+      td {
+          border:1px solid black;
+          padding:3px;
+      }
+
+      table{
+          border-collapse:collapse;
+      }
+
+* {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Arial Narrow';
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      grid-template-columns: 450px 1fr;
+      grid-template-areas:
+        "header header"
+        "sidebar main";
+    }
+
+    /* Top Menu / Header */
+    .header {
+      grid-area: header;
+      background-color: #2c3e50;
+      color: #ffffff;
+      padding: 1rem;
+    }
+
+    /* Left Sidebar */
+    .sidebar {
+      grid-area: sidebar;
+      background-color: #34495e;
+      color: #ffffff;
+      padding: 1rem;
+    }
+
+    /* Main Content Area */
+    .main {
+      grid-area: main;
+      background-color: #34495e;
+      padding: 1rem;
+      overflow-y: auto; /* Enables scrolling inside main content if needed */
+    }
+
+  </style>
+
+  <script>
+
+  /*
+
+We make graph with javascript
+PHP is not the best language for the graphics.
+
+Limits
+    0.7     Genius    0.5     Amazing     0.4     Great
+    0.5     Nice      0.15    Solid       0.08    Good
+    0.05    Moving Up 0.02    Good Start  0.0     Beginner
+
+We read data from files and output a json file for the words and the games played
+Rendering is handled by Javascript
+
+*/
+
+   var dataArr=null;
+
+    function grad(gradid,col1,col2,perc,pwidth)
+    {
+        var str=`<linearGradient id='${gradid}' x1='0' y1='0' x2='${pwidth}' y2='0' gradientUnits='userSpaceOnUse' >
+                 <stop offset='0%' stop-color='${col1}' />
+                 <stop offset='${perc}' stop-color='${col1}' />
+                 <stop offset='${perc+1}%' stop-color='${col2}' />
+                 </linearGradient>`;
+        return str;    
+    }
+
+    function svgPropgress(pwidth,pheight,perc,font,textsize,offs,col1,col2,id)
+    {
+          var str=`<svg xmlns='http://w3.org' viewBox='0 0 ${pwidth} ${pheight}' width='${pwidth}' height='${pheight}'><defs>`;
+          str+=grad("f"+id,col1,col2,perc,pwidth);
+          str+=grad("b"+id,col2,col1,perc,pwidth);
+          str+="</defs>";
+          str+=`<rect width='${pwidth}' height='${pheight}' fill='url(#f${id})' />
+                <text x='50%' y='${(pheight*0.5)+offs}' font-family='${font}' font-size='${textsize}' dominant-baseline='top' alignment-baseline='central' text-anchor='middle' font-weight='bold' fill='url(#b${id})'>${perc}%</text>`;
+          str+="</svg>";
+          return str;    
+    }
+
+    function renderCurve(xadd,yarr)
+    {
+            var xk=0;
+            str="";
+            for(i=0;i<yarr.length;i++){
+                if((i%3)==0){
+                    if(i==0){
+                        str+="M "+xk+" "+yarr[i];
+                    }else{
+                        str+=", "+xk+" "+yarr[i];                    
+                    }
+                }else if((i%3)==1){
+                    str+=" C "+xk+" "+yarr[i];
+                }else if((i%3)==2){
+                    str+=", "+xk+" "+yarr[i]; 
+                }
+                xk+=xadd;
+            }
+            return "<path d='"+str+"' stroke='black' stroke-width='1.5' fill='none' />";
+    }
+
+    function renderLine(xadd,yarr)
+    {
+        var polyline="";
+        var xk=0;
+        for(yk of yarr){
+            polyline+=" "+xk+" "+yk;
+            xk+=xadd;
+        }
+        var str=`<polyline points='${polyline}'  stroke-width='2' stroke='#efd' opacity='1.0' fill='none' />`;
+        return str;
+    }   
+
+   function renderData()
+   {
+        var str="";
+        for(filedata of dataArr ){
+            str+="<tr><td>"+filedata['filename']+"</td>";
+            var perc=Math.floor((filedata['wordsadded']/filedata['wordcount'])*100);
+            var percplay=Math.floor((filedata['playanswcnt']/filedata['wordcount'])*100);
+            str+="<td>"+filedata['total']+"</td>";
+            str+="<td>"+filedata['wordsadded']+" "+filedata['wordcount']+"</td>";
+            str+="<td>"+svgPropgress(80,25,perc,"Arial Narrow",18,7,"#268","#bed","g"+filedata['filename'])+"</td>";
+            str+="<td>"+svgPropgress(80,25,percplay,"Arial Narrow",18,7,"#268","#bed","h"+filedata['filename'])+"</td>";
+            str+="<td>"+filedata['rank']+"</td></tr>";
+            document.getElementById("percentTable").innerHTML=str;
+        }
+
+        var wordarr=[];
+        for(var filedata of dataArr){
+            wordarr.push(filedata.wordsadded);
+        }
+        //str=renderCurve(4,wordarr);
+        str=renderLine(4,wordarr);
+
+        //var str=`<polygon points='${polyarea}' stroke='none' stroke-width='2' fill='#efd' opacity='1.0' />`;
+        //var str=`<polyline points='${polyline}'  stroke-width='2' stroke='#efd' opacity='1.0' fill='none' />`;
+
+        //str+="<path d='"+pathstr+"' stroke='black' stroke-width='1.5' fill='none' />";
+        // str+="<path d='"+pathstr+"' stroke='yellow' stroke-width='2' fill='none' />";
+        document.getElementById("hulk").innerHTML=str;
+   }
+
+   function processData()
+   {
+        fetch('./scan.php').then(response => {
+          return response.json();
+        }).then(data => {
+          dataArr=data;
+          renderData();
+        }).catch(err => {
+            console.log("Error!",err);
+        });   
+   }
+
+  </script>
+
+</head>
+<body onload="processData();">
+
+<header class="header">
+    Top Menu
+  </header>
+
+  <aside class="sidebar">
+    Sidebar
+    <div id='sidebar'><table id='percentTable'>
+    </table></div>
+  </aside>
+
+  <main class="main">
+    Main Content Area
+    <div style='border:1px dotted red;'>
+        <svg width='1000' height='400' xmlns='http://www.w3.org/2000/svg'>
+                <g id="hulk"></g>
+        </svg>
+    </div>
+  </main>
+
+</body>
+</html>

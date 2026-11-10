@@ -1,52 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-  <style>
-      td {
-          border:1px solid black;
-          padding:3px;
-      }
-
-      table{
-          border-collapse:collapse;
-      }
-
-      .upper{
-          background-color:#fff;
-      }
-
-      .lower{
-          background-color:#ccc;
-      }
-  </style>
-
-  <script>
-
-
-
-  </script>
-
-</head>
-<body>
-
-/*
-
-We make graph with javascript
-PHP is not the best language for the graphics.
-
-Limits
-    0.7     Genius    0.5     Amazing     0.4     Great
-    0.5     Nice      0.15    Solid       0.08    Good
-    0.05    Moving Up 0.02    Good Start  0.0     Beginner
-
-We read data from files and output a json file for the words and the games played
-Rendering is handled by Javascript
-
-*/
-
 <?php
 
     function grad($gradid,$col1,$col2,$perc,$pwidth)
@@ -82,7 +33,7 @@ Rendering is handled by Javascript
         return true;
     }
 
-$files = scandir(".");
+$files = scandir("../beeDict");
 
 // Declarecontent arrays for building word list
 $words=Array();
@@ -91,14 +42,14 @@ $filearr=Array();
 
 foreach($files as $filename){
     if(substr($filename,0,4)=="2026"){
-        $innerfiles=scandir("./".$filename);
+        $innerfiles=scandir("../beeDict/".$filename);
         $oldwords=count($words);
         $ifname="UNK";
         foreach($innerfiles as $innerfile){
             if(substr($innerfile,-4,4)=="json"){
                 if(substr($innerfile,-6,1)=="b"){
                     $ifname=$innerfile;
-                    $content=file_get_contents("./".$filename."/".$innerfile);
+                    $content=file_get_contents("../beeDict/".$filename."/".$innerfile);
                     $jsoncontent=json_decode($content);
                     $wordcount=count($jsoncontent);
                     foreach($jsoncontent as $jsonobj){
@@ -139,9 +90,9 @@ foreach($filearr as &$filedata){
     $ifname=str_replace("b","n",$filedata['ifname']);
     $afname=str_replace("b","u",$filedata['ifname']);
 
-    $info=@file_get_contents("./".$filedata['filename']."/".$ifname);
+    $info=@file_get_contents("../beeDict/".$filedata['filename']."/".$ifname);
     if(!$info){
-        $info=@file_get_contents("./".$filedata['filename']."/".$afname);
+        $info=@file_get_contents("../beeDict/".$filedata['filename']."/".$afname);
         if(!$info) $info="UNK";    
     }
     $answers=Array();
@@ -149,6 +100,7 @@ foreach($filearr as &$filedata){
     if($info!="UNK"){
         $jsoncontent=json_decode($info);    
         if(!isset($jsoncontent->game_data)){
+
         }else{
           $rank=$jsoncontent->game_data->rank;
           $answers=$jsoncontent->game_data->answers;
@@ -171,6 +123,7 @@ foreach($filearr as &$filedata){
 
     $answers=Array();
     $pangrams=Array();
+    $letters="";
     if(isset($jsoncontent->answers)){
         $letters=$jsoncontent->centerLetter;
         foreach($jsoncontent->letters as $letter){
@@ -190,21 +143,11 @@ foreach($filearr as &$filedata){
     $filedata['answers']=$answers;
   }
 
-// Open display table
-echo "<div id='sidebar'><table>";
-foreach($filearr as $filedata){
-    echo "<tr>";
-    echo "<td>".$filedata['filename']."</td>";
-    $perc=round(($filedata['wordsadded']/$filedata['wordcount'])*100);
-    $percplay=round(($filedata['playanswcnt']/$filedata['wordcount'])*100);
-    echo "<td>".$filedata['total']."</td>";
-    echo "<td>".$filedata['wordsadded']." ".$filedata['wordcount']."</td>";
-    echo "<td>".svgPropgress(80,25,$perc,"Arial Narrow",18,7,"#268","#bed","g".$filedata['filename'])."</td>";
-    echo "<td>".svgPropgress(80,25,$percplay,"Arial Narrow",18,7,"#268","#bed","h".$filedata['filename'])."</td>";
-    echo "<td>".$filedata['rank']."</td>";
-    echo "</tr>";
-}
-echo "</table></div>";
+  header('Content-Type: application/json');
+  echo json_encode($filearr);
+
+/*
+
 
 $xmult=8;
 $ymult=1.5;
@@ -249,10 +192,13 @@ echo "<polyline points='$rollingavg' stroke='yellow' stroke-width='1.5' fill='no
 echo "<polyline points='$total' stroke='gray' stroke-width='1.5' fill='none' opacity='0.5' stroke-dasharray='4 4' stroke-linejoin='round' />";
 
 echo "</svg></div>";
+*/
 
+/*
 function sortFunc($a,$b){
     return count($b)-count($a);
 }
+
 
 uasort($words, "sortFunc");
 
@@ -280,8 +226,6 @@ foreach($words as $index=>$wordarr){
     $cnt++;
 }
 echo "</table>";
+*/ 
 
 ?>
-
-</body>
-</html>
