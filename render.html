@@ -21,6 +21,9 @@
     }
 
     body {
+      color: #EEE;
+      background-color:#34495e;
+      text-shadow: 1px 1px 1px black;
       font-family: 'Arial Narrow';
       height: 100vh;
       display: grid;
@@ -34,16 +37,16 @@
     /* Top Menu / Header */
     .header {
       grid-area: header;
-      background-color: #2c3e50;
-      color: #ffffff;
+      background-color: #502c3e;
       padding: 1rem;
+      box-shadow: 0px 2px 3px RGBA(0,0,0,0.8);
+      z-index:1000;
     }
 
     /* Left Sidebar */
     .sidebar {
       grid-area: sidebar;
       background-color: #34495e;
-      color: #ffffff;
       padding: 1rem;
     }
 
@@ -80,7 +83,7 @@ Rendering is handled by Javascript
     {
         var str=`<linearGradient id='${gradid}' x1='0' y1='0' x2='${pwidth}' y2='0' gradientUnits='userSpaceOnUse' >
                  <stop offset='0%' stop-color='${col1}' />
-                 <stop offset='${perc}' stop-color='${col1}' />
+                 <stop offset='${perc}%' stop-color='${col1}' />
                  <stop offset='${perc+1}%' stop-color='${col2}' />
                  </linearGradient>`;
         return str;    
@@ -119,7 +122,7 @@ Rendering is handled by Javascript
             return "<path d='"+str+"' stroke='black' stroke-width='1.5' fill='none' />";
     }
 
-    function renderLine(xadd,yarr)
+    function renderLine(xadd,yarr,owidth,ocol,iwidth,icol)
     {
         var polyline="";
         var xk=0;
@@ -127,9 +130,50 @@ Rendering is handled by Javascript
             polyline+=" "+xk+" "+yk;
             xk+=xadd;
         }
-        var str=`<polyline points='${polyline}'  stroke-width='2' stroke='#efd' opacity='1.0' fill='none' />`;
+        var str="";
+        str+=`<polyline points='${polyline}'  stroke-width='${owidth}' stroke='${ocol}' opacity='1.0' fill='none' />`;
+        str+=`<polyline points='${polyline}'  stroke-width='${iwidth}' stroke='${icol}' opacity='1.0' fill='none' />`;
         return str;
     }   
+
+    function renderFill(xadd,yarr,yarrb,col)
+    {
+        var polyline="";
+        var xk=0;
+        for(yk of yarr){
+            polyline+=" "+xk+" "+yk;
+            xk+=xadd;
+        }
+        for(yk of yarrb){
+            xk-=xadd;
+            polyline+=" "+xk+" "+yk;
+        }        
+        var str="";
+        str+=`<polygon points='${polyline}'  fill='${col}' opacity='1.0' />`;
+        return str;
+    }   
+
+    function smoothArr(arr,offs)
+    {
+        var len=arr.length-1;
+        var doffs=offs*2;
+        var retarr=[];
+        for(var i=0;i<arr.length;i++){
+            var avg=0;
+            for(var j=(i-offs);j<(i+offs);j++){
+                if(j<0){
+                    avg+=arr[0];
+                }else if(j>(arr.length-1)){
+                    avg+=arr[arr.length-1];                
+                }else{
+                    avg+=arr[j];
+                }
+            }
+            avg/=doffs;
+            retarr.push(avg);
+        }
+        return retarr;
+    }
 
    function renderData()
    {
@@ -147,17 +191,24 @@ Rendering is handled by Javascript
         }
 
         var wordarr=[];
+        var wordtot=[];
+        var percarr=[];
         for(var filedata of dataArr){
             wordarr.push(filedata.wordsadded);
+            wordtot.push(filedata.wordcount);
+            percarr.push((filedata.wordsadded/filedata.wordcount)*100);
         }
+        percarr=smoothArr(percarr,3);
+        wordarr=smoothArr(wordarr,3);
+        wordtot=smoothArr(wordtot,3);
         //str=renderCurve(4,wordarr);
-        str=renderLine(4,wordarr);
+        
+        str="";
+        str+=renderFill(4,wordarr,wordtot.reverse(),"#550");
+        str+=renderLine(4,wordarr,3,"#000",1.5,"#BB4");
+        str+=renderLine(4,wordtot.reverse(),3,"#000",1.5,"#0B6");
+        str+=renderLine(4,percarr,3,"#000",1.5,"#B06");
 
-        //var str=`<polygon points='${polyarea}' stroke='none' stroke-width='2' fill='#efd' opacity='1.0' />`;
-        //var str=`<polyline points='${polyline}'  stroke-width='2' stroke='#efd' opacity='1.0' fill='none' />`;
-
-        //str+="<path d='"+pathstr+"' stroke='black' stroke-width='1.5' fill='none' />";
-        // str+="<path d='"+pathstr+"' stroke='yellow' stroke-width='2' fill='none' />";
         document.getElementById("hulk").innerHTML=str;
    }
 
@@ -192,6 +243,12 @@ Rendering is handled by Javascript
     Main Content Area
     <div style='border:1px dotted red;'>
         <svg width='1000' height='400' xmlns='http://www.w3.org/2000/svg'>
+                <defs>
+                    <linearGradient id="vg" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stop-color="#ee4" />
+                        <stop offset="100%" stop-color="#094" />
+                    </linearGradient>
+                </defs>
                 <g id="hulk"></g>
         </svg>
     </div>
